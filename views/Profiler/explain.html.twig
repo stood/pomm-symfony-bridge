@@ -1,0 +1,8 @@
+<table style="margin-top:0px;">
+    <tr><th>Explain </th></tr>
+    {% for row in result %}
+        <tr>
+            <td>{{ row['QUERY PLAN'] }}</td>
+        </tr>
+    {% endfor %}
+</table>

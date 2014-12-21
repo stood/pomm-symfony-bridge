@@ -46,13 +46,14 @@ class DatabaseDataCollector extends DataCollector
     public function __construct(Pomm $pomm)
     {
         $this->queries = [];
-        $callable = [$this, 'execute'];
 
-        foreach ($pomm->getSessionBuilders() as $name => $builder) {
-            $pomm->addPostConfiguration($name, function($session) use ($callable) {
-                $session
+        foreach ($pomm->getSessionBuilders() as $sessionName => $builder) {
+            $pomm->addPostConfiguration($sessionName, function($session) use ($sessionName) {
+                    $session
                     ->getClientUsingPooler('listener', 'query')
-                    ->attachAction($callable)
+                    ->attachAction(function ($name, $data, $session) use ($sessionName) {
+                        $this->execute($name, $data, $sessionName, $session);
+                    })
                     ;
             });
         }
@@ -70,17 +71,16 @@ class DatabaseDataCollector extends DataCollector
      * @param  Session  $session
      * @return null
      */
-    public function execute($name, $data, Session $session)
+    public function execute($name, $data, $sessionName, Session $session)
     {
         if (!in_array($name, array('query:pre', 'query:post'))) {
             return;
         }
-
         if ('query:post' === $name) {
             end($this->queries);
             $key = key($this->queries);
             reset($this->queries);
-
+            $data['session_name'] = $sessionName;
             $this->queries[$key] += $data;
 
             return;
